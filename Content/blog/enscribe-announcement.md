@@ -3,6 +3,9 @@ title: "How OLI and Enscribe Are Building the Security UX of Web3's Identity Lay
 excerpt: "Discover how the integration between OLI and Enscribe is solving the critical problem of blind signing by creating a foundational stack for onchain trust and security."
 date: "2025-08-19"
 author: "Ahoura"
+authorSocial:
+  twitter: "https://twitter.com/ahoura_az"
+  telegram: "https://t.me/aghostraa"
 tags: ["announcement", "partnerships", "security", "ens", "blockchain"]
 featured: true
 seo:

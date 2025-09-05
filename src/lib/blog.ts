@@ -13,6 +13,13 @@ export interface BlogPost {
   excerpt: string;
   date: string;
   author: string;
+  authorSocial?: {
+    twitter?: string;
+    discord?: string;
+    farcaster?: string;
+    telegram?: string;
+    website?: string;
+  };
   tags: string[];
   featured: boolean;
   readingTime: number;
@@ -63,6 +70,7 @@ export function getBlogPostMeta(slug: string): BlogPostMeta | null {
       excerpt: data.excerpt || '',
       date: data.date || '',
       author: data.author || 'Anonymous',
+      authorSocial: data.authorSocial || {},
       tags: data.tags || [],
       featured: data.featured || false,
       readingTime: data.readingTime || Math.ceil(readingTimeResult.minutes),
@@ -107,6 +115,7 @@ export async function getBlogPost(slug: string): Promise<BlogPost | null> {
       excerpt: data.excerpt || '',
       date: data.date || '',
       author: data.author || 'Anonymous',
+      authorSocial: data.authorSocial || {},
       tags: data.tags || [],
       featured: data.featured || false,
       readingTime: data.readingTime || Math.ceil(readingTimeResult.minutes),

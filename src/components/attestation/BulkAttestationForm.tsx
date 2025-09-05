@@ -20,6 +20,7 @@ import { formFields } from '../../constants/formFields';
 
 import { validateProjectField } from '../../utils/projectValidation';
 import { validateCategoryField } from '../../utils/categoryValidation';
+import { validatePaymasterField } from '../../utils/paymasterValidation';
 import OwnerProjectInput from './OwnerProjectInput';
 import { CHAINS } from '../../constants/chains';
 
@@ -95,6 +96,29 @@ const BulkAttestationForm: React.FC = () => {
   const [warnings, setWarnings] = useState<{ [key: string]: ValidationWarning[] }>({});
   const [showValidationSummary, setShowValidationSummary] = useState(false);
   const [isValidationMode, setIsValidationMode] = useState(false);
+
+  // Create user-friendly error summary
+  const createErrorSummary = (errors: string[]): string => {
+    if (errors.length === 0) return '';
+    
+    // Count different types of errors
+    const projectErrors = errors.filter(error => error.includes('Invalid project ID')).length;
+    const addressErrors = errors.filter(error => error.includes('Invalid EVM address')).length;
+    const chainErrors = errors.filter(error => error.includes('Invalid chain')).length;
+    const categoryErrors = errors.filter(error => error.includes('Invalid category')).length;
+    const paymasterErrors = errors.filter(error => error.includes('Invalid paymaster')).length;
+    const otherErrors = errors.length - projectErrors - addressErrors - chainErrors - categoryErrors - paymasterErrors;
+    
+    const errorParts = [];
+    if (projectErrors > 0) errorParts.push(`${projectErrors} invalid project${projectErrors !== 1 ? 's' : ''}`);
+    if (addressErrors > 0) errorParts.push(`${addressErrors} invalid address${addressErrors !== 1 ? 'es' : ''}`);
+    if (chainErrors > 0) errorParts.push(`${chainErrors} invalid chain${chainErrors !== 1 ? 's' : ''}`);
+    if (categoryErrors > 0) errorParts.push(`${categoryErrors} invalid category${categoryErrors !== 1 ? 's' : ''}`);
+    if (paymasterErrors > 0) errorParts.push(`${paymasterErrors} invalid paymaster category${paymasterErrors !== 1 ? 's' : ''}`);
+    if (otherErrors > 0) errorParts.push(`${otherErrors} other error${otherErrors !== 1 ? 's' : ''}`);
+    
+    return `CSV imported with ${errorParts.join(', ')}. Review details below.`;
+  };
 
   // Show notification function
   const showNotification = useCallback((message: string, type: 'success' | 'error' | 'warning' = 'success'): void => {
@@ -446,6 +470,30 @@ const BulkAttestationForm: React.FC = () => {
             }
           }
         }
+
+        // Special validation for paymaster_category
+        if (column.id === 'paymaster_category' && value) {
+          const paymasterWarnings = await validatePaymasterField(column.id, value);
+          if (paymasterWarnings.length > 0) {
+            // Separate conversions (warnings) from actual errors
+            const conversions = paymasterWarnings.filter(w => w.isConversion);
+            const actualErrors = paymasterWarnings.filter(w => !w.isConversion);
+            
+            // Add conversions as warnings
+            if (conversions.length > 0) {
+              newWarnings[warningKey] = conversions;
+            }
+            
+            // Add invalid paymaster categories as errors (but preserve suggestions for quick-fix)
+            if (actualErrors.length > 0) {
+              const errorMessage = actualErrors[0].message;
+              newErrors[errorKey] = errorMessage;
+              // Also add to warnings to preserve quick-fix suggestions in ValidationSummary
+              newWarnings[warningKey] = (newWarnings[warningKey] || []).concat(actualErrors);
+              isValid = false;
+            }
+          }
+        }
       }
     }
 
@@ -654,14 +702,33 @@ const BulkAttestationForm: React.FC = () => {
       setShowValidationSummary(true);
 
       if (parseErrors.length > 0) {
-        showNotification(`CSV imported with errors: ${parseErrors.join(', ')}`, 'error');
+        // Create a user-friendly error summary instead of listing all errors
+        const errorSummary = createErrorSummary(parseErrors);
+        showNotification(errorSummary, 'error');
       } else {
-        const conversionCount = Object.keys(conversions).length;
-        if (conversionCount > 0) {
-          showNotification(`CSV imported successfully with ${conversionCount} chain ID conversion${conversionCount !== 1 ? 's' : ''}. Please review the changes below.`, 'success');
+        // Count different types of conversions and warnings
+        const chainConversions = Object.values(conversions).filter(c => c.field === 'Chain ID').length;
+        const categoryConversions = Object.values(conversions).filter(c => c.field === 'Usage Category').length;
+        const paymasterConversions = Object.values(conversions).filter(c => c.field === 'Paymaster Category').length;
+        const totalWarnings = Object.values(allWarnings).flat().length;
+        
+        // Build a simplified notification message
+        const conversionParts = [];
+        if (chainConversions > 0) conversionParts.push(`${chainConversions} chain ID${chainConversions !== 1 ? 's' : ''}`);
+        if (categoryConversions > 0) conversionParts.push(`${categoryConversions} category${categoryConversions !== 1 ? 's' : ''}`);
+        if (paymasterConversions > 0) conversionParts.push(`${paymasterConversions} paymaster category${paymasterConversions !== 1 ? 's' : ''}`);
+        
+        let notificationMessage = '';
+        if (conversionParts.length > 0) {
+          notificationMessage = `CSV imported successfully with ${conversionParts.join(', ')} converted.`;
+        } else if (totalWarnings > 0) {
+          notificationMessage = `CSV imported successfully with ${totalWarnings} validation warning${totalWarnings !== 1 ? 's' : ''}.`;
         } else {
-          showNotification('CSV file imported successfully. Please review any warnings.', 'success');
+          notificationMessage = 'CSV file imported successfully.';
         }
+        
+        notificationMessage += ' Review details below.';
+        showNotification(notificationMessage, 'success');
       }
 
       if (newRows.length > 50) {
@@ -960,6 +1027,31 @@ const BulkAttestationForm: React.FC = () => {
                 <option key={categoryId} value={categoryId} />
               ))}
             </datalist>
+            {error && <div className="absolute inset-x-0 -bottom-1 h-0.5 bg-red-500" />}
+          </div>
+        </td>
+      );
+    }
+
+    // Special handling for paymaster_category
+    if (column.id === 'paymaster_category') {
+      const validPaymasterCategories = ['verifying', 'token', 'verifying_and_token'];
+      return (
+        <td key={column.id} className="relative" data-field={column.id}>
+          <div className="relative w-full">
+            <select
+              value={value}
+              onChange={(e) => updateRow(rowIndex, column.id, e.target.value)}
+              className={baseInputClasses}
+            >
+              <option value="">Select a paymaster category</option>
+              <option value="verifying">Verifying</option>
+              <option value="token">Token</option>
+              <option value="verifying_and_token">Verifying and Token</option>
+            </select>
+            {value && validPaymasterCategories.includes(value) && (
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 text-green-500">✓</div>
+            )}
             {error && <div className="absolute inset-x-0 -bottom-1 h-0.5 bg-red-500" />}
           </div>
         </td>

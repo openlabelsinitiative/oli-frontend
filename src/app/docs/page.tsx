@@ -1,12 +1,16 @@
 'use client';
 
-import React from 'react';
-import TagDocumentation from '@/components/TagDocumentation';
+import React, { Suspense } from 'react';
+import DocsLayout from '@/components/DocsLayout';
+
+function DocsContent() {
+  return <DocsLayout />;
+}
 
 export default function DocsPage() {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <TagDocumentation />
-    </div>
+    <Suspense fallback={<div>Loading...</div>}>
+      <DocsContent />
+    </Suspense>
   );
 } 
