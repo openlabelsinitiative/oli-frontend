@@ -3,6 +3,7 @@ import { CHAINS } from '../constants/chains';
 import { formFields } from '../constants/formFields';
 import { validateProjectField } from './projectValidation';
 import { validateCategoryField, convertCategoryAlias } from './categoryValidation';
+import { validatePaymasterField, convertPaymasterAlias } from './paymasterValidation';
 
 const levenshtein = (a: string, b: string): number => {
     const an = a.length;
@@ -313,6 +314,19 @@ export const parseAndCleanCsv = async (csvText: string, emptyRow: RowData): Prom
                             field: 'Usage Category'
                         };
                     }
+                } else if (fieldId === 'paymaster_category') {
+                    const originalValue = value;
+                    value = convertPaymasterAlias(value);
+                    
+                    // Track conversion if value changed
+                    if (originalValue !== value && originalValue.trim() !== '') {
+                        const conversionKey = `${rowIndex}-${fieldId}`;
+                        conversions[conversionKey] = {
+                            original: originalValue,
+                            converted: value,
+                            field: 'Paymaster Category'
+                        };
+                    }
                 }
                 
                 row[fieldId] = cleanValue(value, columnDef);
@@ -341,6 +355,14 @@ export const parseAndCleanCsv = async (csvText: string, emptyRow: RowData): Prom
                     const key = `${rowIndex}-${fieldId}`;
                     warnings[key] = warnings[key] || [];
                     warnings[key].push(...categoryWarnings);
+                }
+                
+                // Validate paymaster fields
+                const paymasterWarnings = await validatePaymasterField(fieldId, row[fieldId]);
+                if (paymasterWarnings.length > 0) {
+                    const key = `${rowIndex}-${fieldId}`;
+                    warnings[key] = warnings[key] || [];
+                    warnings[key].push(...paymasterWarnings);
                 }
             }
         }

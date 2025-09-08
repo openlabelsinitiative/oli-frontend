@@ -3,8 +3,11 @@ title: "Introducing the OLI Blog: Advancing Ethereum Address Labeling one blog a
 excerpt: "Welcome to the Open Labels Initiative blog! Learn about our mission to create a standardized framework for EVM address labeling and how we're building the future of blockchain analytics."
 date: "2025-08-19"
 author: "Ahoura"
+authorSocial:
+  twitter: "https://twitter.com/ahoura_az"
+  telegram: "https://t.me/aghostraa"
 tags: ["announcement", "oli", "labeling"]
-featured: true
+featured: false
 readingTime: 5
 seo:
   title: "Introducing the OLI Blog - Open Labels Initiative"

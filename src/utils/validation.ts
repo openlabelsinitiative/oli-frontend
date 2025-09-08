@@ -4,6 +4,13 @@ import { FieldValue } from '../types/attestation';
 import { VALID_CATEGORY_IDS } from '../constants/categories';
 import { CHAINS } from '../constants/chains';
 
+// Valid paymaster categories
+const VALID_PAYMASTER_CATEGORIES = [
+  'verifying',
+  'token', 
+  'verifying_and_token'
+];
+
 export const validateAddress = (address: FieldValue): string => {
   if (!address) return 'Address is required';
   try {
@@ -57,6 +64,16 @@ export const validateCategory = (value: string): string | null => {
   }
   
   return `Invalid category: "${value}". Please select from available categories.`;
+};
+
+export const validatePaymasterCategory = (value: string): string | null => {
+  if (!value) return null; // Empty is valid (optional field)
+  
+  if (VALID_PAYMASTER_CATEGORIES.includes(value)) {
+    return null; // Valid paymaster category
+  }
+  
+  return `Invalid paymaster category: "${value}". Please select from available categories (verifying, token, verifying_and_token).`;
 };
 
 export const validateBoolean = (value: string): string | null => {

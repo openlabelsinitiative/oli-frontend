@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Clock, User, Calendar, ArrowLeft, Share2, Copy, Check, Twitter, Linkedin } from 'lucide-react';
 import { useState } from 'react';
 import { BlogPost } from '@/lib/blog';
+import AuthorSocialLinks from './AuthorSocialLinks';
 
 interface BlogContentProps {
   post: BlogPost;
@@ -204,17 +205,22 @@ export default function BlogContent({ post }: BlogContentProps) {
 
         {/* Article footer */}
         <footer className="mt-16 pt-8 border-t border-gray-200">
-          <div className="flex flex-wrap items-center justify-between gap-6 p-8 bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl">
-            <div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Written by {post.author}
-              </h3>
-              <p className="text-gray-600 text-sm">
-                Published on {format(new Date(post.date), 'MMMM d, yyyy')}
-              </p>
+          <div className="flex flex-col gap-6 p-8 bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl">
+            {/* Author info and social links */}
+            <div className="flex flex-wrap items-start justify-between gap-6">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Written by {post.author}
+                </h3>
+                <p className="text-gray-600 text-sm mb-3">
+                  Published on {format(new Date(post.date), 'MMMM d, yyyy')}
+                </p>
+                <AuthorSocialLinks authorSocial={post.authorSocial} />
+              </div>
             </div>
             
-            <div className="flex items-center gap-3">
+            {/* Share buttons */}
+            <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
               <span className="text-sm text-gray-600 font-medium">Share:</span>
               <button
                 onClick={() => {

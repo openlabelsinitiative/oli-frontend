@@ -83,6 +83,40 @@ The system automatically converts these common aliases:
 - **Visual Feedback**: Clear indicators show validation status and suggestions
 - **Quick-fix Options**: One-click buttons to apply suggested corrections
 
+### `paymaster_category` Validation and Aliases
+
+The system includes comprehensive paymaster category validation with smart suggestions to help ensure your paymaster category values are correct:
+
+#### Supported Paymaster Category Aliases
+
+The system automatically converts these common aliases:
+
+| Alias | Converts To | Category Name |
+|-------|-------------|---------------|
+| `verify` | `verifying` | Verifying Paymaster |
+| `verification` | `verifying` | Verifying Paymaster |
+| `verifier` | `verifying` | Verifying Paymaster |
+| `tokens` | `token` | Token Paymaster |
+| `token_paymaster` | `token` | Token Paymaster |
+| `verifying_token` | `verifying_and_token` | Verifying and Token Paymaster |
+| `token_and_verifying` | `verifying_and_token` | Verifying and Token Paymaster |
+| `both` | `verifying_and_token` | Verifying and Token Paymaster |
+| `hybrid` | `verifying_and_token` | Verifying and Token Paymaster |
+
+#### Valid Paymaster Categories
+
+- **`verifying`**: Paymaster that only verifies transactions
+- **`token`**: Paymaster that accepts tokens as payment
+- **`verifying_and_token`**: Paymaster that both verifies transactions and accepts tokens
+
+#### Paymaster Category Validation Features
+
+- **Smart Suggestions**: The system provides intelligent suggestions for typos or incorrect paymaster categories
+- **Automatic Conversion**: Common aliases are automatically converted during import
+- **Visual Feedback**: Clear indicators show validation status and suggestions
+- **Quick-fix Options**: One-click buttons to apply suggested corrections
+- **Dropdown Interface**: In the bulk attestation form, paymaster categories are displayed as a dropdown for easy selection
+
 ### Boolean Values (Yes/No)
 
 For fields that require a `true` or `false` value (e.g., `is_contract`), you can use any of the following:
@@ -122,6 +156,14 @@ The parser is designed to be resilient and will attempt to process as much of yo
 - **Typos**: Provides closest match suggestions using fuzzy matching
 - **Unknown Categories**: Fallback suggestions include "other" category
 
+### Paymaster Category Validation Errors
+
+- **Invalid Paymaster Categories**: Shows as validation errors with quick-fix suggestions
+- **Alias Conversions**: Shows as warnings with conversion suggestions (e.g., "verify" → "verifying")
+- **Empty Paymaster Categories**: Allowed as optional field
+- **Typos**: Provides closest match suggestions using fuzzy matching
+- **Unknown Paymaster Categories**: Fallback suggestions include "verifying" category
+
 ### What You Should See After Import
 
 When you successfully import a CSV:
@@ -138,6 +180,7 @@ When you successfully import a CSV:
    - Chain IDs converted to proper names (e.g., "10" → "Optimism")
    - Boolean values standardized (e.g., "1", "yes" → "Yes")
    - Category aliases converted (e.g., "defi" → "dex")
+   - Paymaster category aliases converted (e.g., "verify" → "verifying")
 
 ### Common Error Messages
 
@@ -147,6 +190,8 @@ When you successfully import a CSV:
 *   `"Column 'column-name' was not recognized and will be ignored."`
 *   `"Invalid category: 'category-name'. Did you mean 'suggested-category'?"`
 *   `"Category alias 'defi' will be converted to 'dex'."`
+*   `"Invalid paymaster category: 'paymaster-type'. Did you mean 'verifying'?"`
+*   `"Paymaster category alias 'verify' will be converted to 'verifying'."`
 
 By providing detailed feedback on errors and warnings, the tool allows you to fix any issues without having to re-upload the entire file.
 
@@ -197,6 +242,7 @@ If you are an AI, please use the following instructions to generate a valid CSV 
     *   For `chain_id`, use the lowercase name (e.g., `ethereum`).
     *   For `Boolean` fields, use `true` or `false`.
     *   For `usage_category`, use the standardized category IDs or common aliases.
+    *   For `paymaster_category`, use the standardized paymaster category IDs or common aliases.
     *   If any text field contains a comma, enclose the entire string in double quotes (`"`).
     *   If any text field contains double quotes, escape them with an additional double quote (`""`).
 4.  **Generate the CSV**: Create a text block with the CSV data. Ensure the first line is the header row, and each subsequent line is a data row.
@@ -205,3 +251,4 @@ If you are an AI, please use the following instructions to generate a valid CSV 
     *   All formatting rules have been followed
     *   Every row has the same number of columns as the header
     *   Category values are valid or use recognized aliases
+    *   Paymaster category values are valid or use recognized aliases
