@@ -21,6 +21,18 @@ export const validateAddress = (address: FieldValue): string => {
   }
 };
 
+const isEvmChainId = (chainId?: string): boolean => {
+  if (!chainId) return false;
+  return chainId.toLowerCase().startsWith('eip155:');
+};
+
+export const validateAddressForChain = (address: FieldValue, chainId?: string): string => {
+  if (!address) return 'Address is required';
+  if (!chainId) return '';
+  if (!isEvmChainId(chainId)) return '';
+  return validateAddress(address);
+};
+
 export const validateAddress_empty = (address: FieldValue): string => {
   if (!address) return ''; // Return empty string instead of error message when address is empty
   try {

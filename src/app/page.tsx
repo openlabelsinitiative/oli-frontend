@@ -30,8 +30,8 @@ const HomePage: FC = () => {
               />
             </div>
             
-            <p className="mt-6 max-w-md mx-auto text-xl text-gray-500 sm:text-2xl md:text-3xl md:max-w-4xl font-light leading-relaxed">
-              A Standard, Registry and Trust Layer for EVM Address Labels.
+            <p className="mt-6 mx-auto max-w-none whitespace-nowrap text-xl text-gray-500 sm:text-2xl md:text-3xl font-light leading-relaxed">
+              A Standard, Registry and Trust Layer for EVM<span className="oli-typing">/non-EVM</span> Address Labels.
             </p>
             
             <div className="mt-8 mx-auto sm:flex sm:justify-center">
@@ -65,6 +65,46 @@ const HomePage: FC = () => {
           </div>
         </div>
       </div>
+      <style jsx>{`
+        .oli-typing {
+          display: inline-block;
+          overflow: hidden;
+          white-space: nowrap;
+          vertical-align: bottom;
+          max-width: 0;
+          border-right: 2px solid rgba(167, 139, 250, 0.9);
+          animation:
+            oli-typing 1.5s steps(8) 0.6s forwards,
+            oli-caret 0.9s steps(1) 0.6s 3;
+          animation-fill-mode: forwards, forwards;
+        }
+
+        @keyframes oli-typing {
+          from {
+            max-width: 0;
+          }
+          to {
+            max-width: 8ch;
+          }
+        }
+
+        @keyframes oli-caret {
+          0%, 50% {
+            border-color: rgba(167, 139, 250, 0.9);
+          }
+          51%, 100% {
+            border-color: transparent;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .oli-typing {
+            width: auto;
+            border-right: none;
+            animation: none;
+          }
+        }
+      `}</style>
 
       {/* Problem Statement Section */}
       <div className="bg-white py-16">
@@ -535,7 +575,7 @@ const HomePage: FC = () => {
               Search Contracts
             </h3>
             <p className="text-gray-600 mb-4 flex-grow">
-              Explore and discover labeled smart contracts. Find detailed information about EVM addresses.
+              Explore and discover labeled smart contracts. Find detailed information about EVM/non-EVM addresses.
             </p>
             <div className="mt-auto flex items-center text-indigo-600 text-sm font-medium">
               Search now

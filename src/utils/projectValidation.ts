@@ -27,7 +27,7 @@ export const fetchProjects = async (): Promise<ProjectData[]> => {
   if (projectsPromise) {
     return projectsPromise;
   }
-  projectsPromise = fetch('https://api.growthepie.xyz/v1/labels/projects.json')
+  projectsPromise = fetch('https://api.growthepie.com/v1/labels/projects.json')
     .then(response => response.json())
     .then(data => {
       projects = transformProjectData(data);

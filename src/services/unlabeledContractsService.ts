@@ -2,18 +2,20 @@ import { ChainData, ChainKey, UnlabeledContract } from '@/types/unlabeledContrac
 
 // Chain URLs configuration - matches the Python script
 const CHAIN_BLOCKSPACE_URLS: Record<ChainKey, string> = {
-  arbitrum: "https://api.growthepie.xyz/v1/chains/blockspace/arbitrum.json",
-  polygon_zkevm: "https://api.growthepie.xyz/v1/chains/blockspace/polygon_zkevm.json",
-  optimism: "https://api.growthepie.xyz/v1/chains/blockspace/optimism.json",
-  zksync_era: "https://api.growthepie.xyz/v1/chains/blockspace/zksync_era.json",
-  base: "https://api.growthepie.xyz/v1/chains/blockspace/base.json",
-  zora: "https://api.growthepie.xyz/v1/chains/blockspace/zora.json",
-  linea: "https://api.growthepie.xyz/v1/chains/blockspace/linea.json",
-  scroll: "https://api.growthepie.xyz/v1/chains/blockspace/scroll.json",
-  mantle: "https://api.growthepie.xyz/v1/chains/blockspace/mantle.json",
-  mode: "https://api.growthepie.xyz/v1/chains/blockspace/mode.json",
-  taiko: "https://api.growthepie.xyz/v1/chains/blockspace/taiko.json",
-  swell: "https://api.growthepie.xyz/v1/chains/blockspace/swell.json"
+  arbitrum: "https://api.growthepie.com/v1/chains/blockspace/arbitrum.json",
+  polygon_zkevm: "https://api.growthepie.com/v1/chains/blockspace/polygon_zkevm.json",
+  optimism: "https://api.growthepie.com/v1/chains/blockspace/optimism.json",
+  zksync_era: "https://api.growthepie.com/v1/chains/blockspace/zksync_era.json",
+  base: "https://api.growthepie.com/v1/chains/blockspace/base.json",
+  zora: "https://api.growthepie.com/v1/chains/blockspace/zora.json",
+  linea: "https://api.growthepie.com/v1/chains/blockspace/linea.json",
+  scroll: "https://api.growthepie.com/v1/chains/blockspace/scroll.json",
+  mantle: "https://api.growthepie.com/v1/chains/blockspace/mantle.json",
+  mode: "https://api.growthepie.com/v1/chains/blockspace/mode.json",
+  taiko: "https://api.growthepie.com/v1/chains/blockspace/taiko.json",
+  swell: "https://api.growthepie.com/v1/chains/blockspace/swell.json",
+  megaeth: "https://api.growthepie.com/v1/chains/blockspace/megaeth.json",
+  polygon_pos: "https://api.growthepie.com/v1/chains/blockspace/polygon_pos.json"
 };
 
 // Time ranges to check

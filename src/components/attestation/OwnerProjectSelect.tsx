@@ -57,7 +57,7 @@ const OwnerProjectSelect = ({
       try {
         // Add cache-busting parameters to ensure fresh data on every request
         const timestamp = Date.now();
-        const response = await fetch(`https://api.growthepie.xyz/v1/labels/projects.json?t=${timestamp}`, {
+        const response = await fetch(`https://api.growthepie.com/v1/labels/projects.json?t=${timestamp}`, {
           cache: 'no-store', // Prevent browser caching
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -115,7 +115,7 @@ const OwnerProjectSelect = ({
   // Function to build the logo URL
   const getLogoUrl = (logoPath: string | null) => {
     if (!logoPath) return null;
-    return `https://api.growthepie.xyz/v1/apps/logos/${logoPath}`;
+    return `https://api.growthepie.com/v1/apps/logos/${logoPath}`;
   };
 
   // Project not found component

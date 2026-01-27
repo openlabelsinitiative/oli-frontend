@@ -3,6 +3,9 @@ import { EAS, SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
 import { getNetworkConfig, isSupportedAttestationChain, type SupportedChainId } from '../constants/eas';
 import { getWeb3Provider, getSigner } from '@dynamic-labs/ethers-v6';
 import { encodeFunctionData } from 'viem';
+import { buildCaip10 } from './caipUtils';
+
+export const FRONTEND_ATTESTATION_RECIPIENT = '0x0000000000000000000000000000000000000002';
 
 export const prepareTags = (formData: Record<string, any>) => {
   const tagsObject: { [key: string]: any } = {};
@@ -61,16 +64,22 @@ export const prepareTags = (formData: Record<string, any>) => {
   return tagsObject;
 };
 
-export const prepareEncodedData = (chain_id: string, tagsObject: Record<string, any>, attestationChainId?: number) => {
+export const prepareEncodedData = (
+  chainId: string,
+  address: string,
+  tagsObject: Record<string, any>,
+  attestationChainId?: number
+) => {
   // Use the schema definition from the network config if available
   const schemaDefinition = attestationChainId 
     ? getNetworkConfig(attestationChainId).schemaDefinition 
     : getNetworkConfig(8453).schemaDefinition; // Default to Base
   
   const schemaEncoder = new SchemaEncoder(schemaDefinition);
+  const caip10 = buildCaip10(chainId, address);
   
   return schemaEncoder.encodeData([
-    { name: 'chain_id', value: chain_id, type: 'string' },
+    { name: 'caip10', value: caip10, type: 'string' },
     { name: 'tags_json', value: JSON.stringify(tagsObject), type: 'string' }
   ]);
 };

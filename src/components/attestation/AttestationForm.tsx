@@ -14,7 +14,9 @@ import { TAG_DESCRIPTIONS } from '../../constants/tagDescriptions';
 import { getNetworkConfig, type SupportedChainId } from '../../constants/eas';
 import { formFields, initialFormState } from '../../constants/formFields';
 import { FormMode, FieldValue, NotificationType, ConfirmationData } from '../../types/attestation';
-import { prepareTags, prepareEncodedData, switchToAttestationNetwork, initializeEAS, canUseSponsoredTransaction, createSponsoredAttestation } from '../../utils/attestationUtils';
+import { prepareTags, prepareEncodedData, switchToAttestationNetwork, initializeEAS, canUseSponsoredTransaction, createSponsoredAttestation, FRONTEND_ATTESTATION_RECIPIENT } from '../../utils/attestationUtils';
+import { parseCaip10 } from '../../utils/caipUtils';
+import { validateAddressForChain } from '../../utils/validation';
 
 // Dynamic wallet integration
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
@@ -59,11 +61,19 @@ const AttestationForm: React.FC<AttestationFormProps> = ({
   // Use prefilledAddress and prefilledChainId if provided
   useEffect(() => {
     if (prefilledAddress || prefilledChainId) {
+      const parsedCaip10 = prefilledAddress ? parseCaip10(prefilledAddress) : null;
       setFormData(prev => ({
         ...prev,
-        ...(prefilledAddress ? { address: prefilledAddress } : {}),
-        ...(prefilledChainId ? { chain_id: prefilledChainId } : {})
+        ...(parsedCaip10 ? { address: parsedCaip10.address } : prefilledAddress ? { address: prefilledAddress } : {}),
+        ...(prefilledChainId ? { chain_id: prefilledChainId } : parsedCaip10?.isKnownChain ? { chain_id: parsedCaip10.chainId } : {})
       }));
+
+      if (parsedCaip10?.isKnownChain && prefilledChainId && prefilledChainId !== parsedCaip10.chainId) {
+        console.warn('CAIP-10 chain does not match provided chain parameter:', {
+          caip10Chain: parsedCaip10.chainId,
+          queryChain: prefilledChainId
+        });
+      }
     }
   }, [prefilledAddress, prefilledChainId]);
 
@@ -103,7 +113,12 @@ const AttestationForm: React.FC<AttestationFormProps> = ({
     
     // Create tags_json object
     const tagsObject = prepareTags(formData);
-    const encodedData = prepareEncodedData(formData.chain_id as string, tagsObject, attestationNetworkId);
+    const encodedData = prepareEncodedData(
+      formData.chain_id as string,
+      formData.address as string,
+      tagsObject,
+      attestationNetworkId
+    );
 
     // Check if Dynamic wallet is connected (in connect-only mode, user might be null)
     if (!primaryWallet) {
@@ -132,7 +147,7 @@ const AttestationForm: React.FC<AttestationFormProps> = ({
           // Try sponsored transaction first
           const result = await createSponsoredAttestation(primaryWallet, {
             schema: networkConfig.schemaUID,
-            recipient: formData.address as string,
+            recipient: FRONTEND_ATTESTATION_RECIPIENT,
             expirationTime: BigInt(0),
             revocable: true,
             data: encodedData,
@@ -147,7 +162,7 @@ const AttestationForm: React.FC<AttestationFormProps> = ({
           const tx = await eas.attest({
             schema: networkConfig.schemaUID,
             data: {
-              recipient: formData.address as string,
+              recipient: FRONTEND_ATTESTATION_RECIPIENT,
               expirationTime: BigInt(0),
               revocable: true,
               data: encodedData,
@@ -161,7 +176,7 @@ const AttestationForm: React.FC<AttestationFormProps> = ({
         const tx = await eas.attest({
           schema: networkConfig.schemaUID,
           data: {
-            recipient: formData.address as string,
+            recipient: FRONTEND_ATTESTATION_RECIPIENT,
             expirationTime: BigInt(0),
             revocable: true,
             data: encodedData,
@@ -205,8 +220,9 @@ const AttestationForm: React.FC<AttestationFormProps> = ({
 
     getVisibleFields().forEach(field => {
       if (field.validator) {
-        // This line now works correctly with our improved types
-        const error = field.validator(formData[field.id]);
+        const error = field.id === 'address'
+          ? validateAddressForChain(formData[field.id], formData.chain_id as string | undefined)
+          : field.validator(formData[field.id]);
 
         if (error) {
           newErrors[field.id] = error;
@@ -248,14 +264,31 @@ const AttestationForm: React.FC<AttestationFormProps> = ({
   const handleChange = (fieldId: string, value: FieldValue) => {
     // If the value is null, undefined, or empty, store as empty string
     const normalizedValue = value === null || value === undefined ? '' : value;
-    
-    setFormData(prev => ({ ...prev, [fieldId]: normalizedValue }));
+
+    const parsedCaip10 = fieldId === 'address' && typeof normalizedValue === 'string'
+      ? parseCaip10(normalizedValue)
+      : null;
+
+    setFormData(prev => {
+      if (fieldId === 'address' && parsedCaip10) {
+        const nextState = { ...prev, address: parsedCaip10.address };
+        if (parsedCaip10.isKnownChain) {
+          nextState.chain_id = parsedCaip10.chainId;
+        }
+        return nextState;
+      }
+
+      return { ...prev, [fieldId]: normalizedValue };
+    });
     
     // Clear errors when user changes input
-    if (errors[fieldId]) {
+    if (errors[fieldId] || (parsedCaip10?.isKnownChain && errors.chain_id)) {
       setErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors[fieldId];
+        if (parsedCaip10?.isKnownChain) {
+          delete newErrors.chain_id;
+        }
         return newErrors;
       });
     }

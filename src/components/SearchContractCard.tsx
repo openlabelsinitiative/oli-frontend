@@ -465,31 +465,6 @@ const SearchContractCard: React.FC<SearchContractCardProps> = ({
   }, [hasGrowthePieAttestation, address, growthePieData]);
 
   useEffect(() => {
-    const fetchEnsName = async () => {
-      setEnsState(prev => ({ ...prev, loading: true, error: null }));
-      
-      try {
-        const chainName = getChainName().toLowerCase();
-        const resolution = await resolveEnsName(address, chainName);
-        setEnsState({
-          resolution,
-          loading: false,
-          error: null
-        });
-      } catch (error) {
-        console.error('ENS resolution failed:', error);
-        setEnsState({
-          resolution: null,
-          loading: false,
-          error: error instanceof Error ? error.message : 'ENS resolution failed'
-        });
-      }
-    };
-
-    fetchEnsName();
-  }, [address, getChainName]);
-
-  useEffect(() => {
     if (!enableLabelsLookup) return;
     setLabels([]);
     setLabelsError('');
@@ -519,16 +494,56 @@ const SearchContractCard: React.FC<SearchContractCardProps> = ({
     loadLabels();
   }, [address, enableLabelsLookup, groupLabelsByAttester, labelChainFilter]);
 
-  // Format functions
-  function formatFullAddress(addr: string): string {
-    if (!addr) return '';
-    return addr.startsWith('0x') ? addr : `0x${addr}`;
-  }
+  const resolvedChainId = labelChainFilter || attestations.find(attestation => attestation.chain_id)?.chain_id;
+  const isEvmChain = resolvedChainId?.toLowerCase().startsWith('eip155:') ?? false;
 
-  const formatShortAddress = (address: string): string => {
-    if (!address) return '';
-    const addr = address.startsWith('0x') ? address : `0x${address}`;
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+  useEffect(() => {
+    if (!isEvmChain) {
+      setEnsState({ resolution: null, loading: false, error: null });
+      return;
+    }
+
+    const fetchEnsName = async () => {
+      setEnsState(prev => ({ ...prev, loading: true, error: null }));
+      
+      try {
+        const chainName = getChainName().toLowerCase();
+        const resolution = await resolveEnsName(address, chainName);
+        setEnsState({
+          resolution,
+          loading: false,
+          error: null
+        });
+      } catch (error) {
+        console.error('ENS resolution failed:', error);
+        setEnsState({
+          resolution: null,
+          loading: false,
+          error: error instanceof Error ? error.message : 'ENS resolution failed'
+        });
+      }
+    };
+
+    fetchEnsName();
+  }, [address, getChainName, isEvmChain]);
+
+  const normalizeAddress = (addr: string): string => {
+    if (!addr) return '';
+    if (addr.startsWith('0x')) return addr;
+    if (isEvmChain && /^[a-fA-F0-9]{40}$/.test(addr)) {
+      return `0x${addr}`;
+    }
+    return addr;
+  };
+
+  const formatFullAddress = (addr: string): string => {
+    return normalizeAddress(addr);
+  };
+
+  const formatShortAddress = (addr: string): string => {
+    const normalized = normalizeAddress(addr);
+    if (!normalized) return '';
+    return normalized.length > 12 ? `${normalized.slice(0, 6)}...${normalized.slice(-4)}` : normalized;
   };
 
 
@@ -609,7 +624,7 @@ const SearchContractCard: React.FC<SearchContractCardProps> = ({
 
   const shouldShowLabelStatus = enableLabelsLookup && groupLabelsByAttester;
 
-  const loadAttestationMetadata = async (attestation: ParsedAttestation) => {
+  const loadAttestationMetadata = useCallback(async (attestation: ParsedAttestation) => {
     const placeholderKey = attestation.txid;
     if (attestationMetadataLoading[placeholderKey]) return;
 
@@ -647,7 +662,7 @@ const SearchContractCard: React.FC<SearchContractCardProps> = ({
     } finally {
       setAttestationMetadataLoading(prev => ({ ...prev, [placeholderKey]: false }));
     }
-  };
+  }, [address, attestationMetadataCache, attestationMetadataLoading]);
 
   useEffect(() => {
     if (!groupLabelsByAttester) return;
@@ -659,7 +674,7 @@ const SearchContractCard: React.FC<SearchContractCardProps> = ({
       }
       loadAttestationMetadata(attestation);
     });
-  }, [attestationMetadataLoading, attestationMetadataOverrides, groupLabelsByAttester, parsedAttestations]);
+  }, [attestationMetadataLoading, attestationMetadataOverrides, groupLabelsByAttester, loadAttestationMetadata, parsedAttestations]);
 
   return (
     <div 

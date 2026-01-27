@@ -491,7 +491,7 @@ const BASE_CHAINS: ChainMetadata[] = [
     id: 'starknet',
     name: 'Starknet',
     shortName: 'Starknet',
-    caip2: 'SN_MAIN',
+    caip2: 'starknet:SN_MAIN',
     colors: {
       light: ['#EC796B', '#EC796B'],
       dark: ['#EC796B', '#EC796B'],

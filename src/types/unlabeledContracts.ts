@@ -13,7 +13,9 @@ export type ChainKey =
   | 'mantle' 
   | 'mode' 
   | 'taiko' 
-  | 'swell';
+  | 'swell'
+  | 'megaeth'
+  | 'polygon_pos';
 
 // Represents a contract from the API
 export interface Contract {

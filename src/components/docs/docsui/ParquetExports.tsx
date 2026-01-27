@@ -18,7 +18,7 @@ const ParquetExports: React.FC<ParquetExportsProps> = ({ className = "" }) => {
         <div>
           <h3 className="text-lg font-semibold text-gray-800 mb-3">Raw:</h3>
           <UrlDisplay 
-            url="https://api.growthepie.xyz/v1/oli/labels_raw.parquet"
+            url="https://api.growthepie.com/v1/oli/labels_raw.parquet"
             className="mb-4"
           />
         </div>
@@ -26,7 +26,7 @@ const ParquetExports: React.FC<ParquetExportsProps> = ({ className = "" }) => {
         <div>
           <h3 className="text-lg font-semibold text-gray-800 mb-3">Decoded:</h3>
           <UrlDisplay 
-            url="https://api.growthepie.xyz/v1/oli/labels_decoded.parquet"
+            url="https://api.growthepie.com/v1/oli/labels_decoded.parquet"
           />
         </div>
       </div>

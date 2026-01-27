@@ -195,7 +195,7 @@ const SearchTab = () => {
         <div className="flex gap-2">
           <input
             type="text"
-            placeholder="Enter address (0x...)"
+            placeholder="Enter address (CAIP-10 or chain-specific)"
             value={contractAddress}
             onChange={handleAddressChange}
             className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"

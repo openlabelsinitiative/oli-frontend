@@ -10,6 +10,8 @@ import SearchContractCard from '@/components/SearchContractCard';
 import { CHAINS, CHAIN_OPTIONS } from '@/constants/chains';
 import { TAG_DESCRIPTIONS } from '@/constants/tagDescriptions';
 import { formFields } from '@/constants/formFields';
+import { validateAddressForChain } from '@/utils/validation';
+import { parseCaip10 } from '@/utils/caipUtils';
 import { searchAttestations, type Attestation } from '@/services/attestationService';
 import type { AddressSearchResult } from '@/services/addressSearchService';
 import { searchAddressesByTag } from '@/services/addressSearchService';
@@ -100,8 +102,8 @@ const normalizeChain = (chainParam: string): string | null => {
   return aliasMap[normalizedParam] || null;
 };
 
-const isValidAddress = (address: string): boolean => {
-  return /^0x[a-fA-F0-9]{40}$/.test(address);
+const getAddressValidationError = (address: string, chainId?: string): string | null => {
+  return validateAddressForChain(address, chainId);
 };
 
 const clampLimit = (value: number): number => {
@@ -224,14 +226,18 @@ function SearchContent() {
 
   const executeAddressSearch = useCallback(async (address: string, chainId?: string, requestedLimit?: number) => {
     const trimmedAddress = address.trim();
+    const parsedCaip10 = parseCaip10(trimmedAddress);
+    const resolvedAddress = parsedCaip10 ? parsedCaip10.address : trimmedAddress;
+    const resolvedChainId = chainId || (parsedCaip10?.isKnownChain ? parsedCaip10.chainId : undefined);
 
-    if (!trimmedAddress) {
+    if (!resolvedAddress) {
       setError('Please enter an address');
       return;
     }
 
-    if (!isValidAddress(trimmedAddress)) {
-      setError('Please enter a valid Ethereum address (0x...)');
+    const validationError = getAddressValidationError(resolvedAddress, resolvedChainId);
+    if (validationError) {
+      setError(validationError);
       return;
     }
 
@@ -244,12 +250,12 @@ function SearchContent() {
     setResults([]);
     setResultCount(0);
     setAppliedFilters(null);
-    setAppliedAddress({ address: trimmedAddress, chainId: chainId || undefined, limit: effectiveLimit });
+    setAppliedAddress({ address: resolvedAddress, chainId: resolvedChainId || undefined, limit: effectiveLimit });
 
     try {
       const attestations = await searchAttestations({
-        recipient: trimmedAddress,
-        chainId: chainId || undefined,
+        recipient: resolvedAddress,
+        chainId: resolvedChainId || undefined,
         limit: effectiveLimit
       });
       setAddressAttestations(attestations);
@@ -279,11 +285,19 @@ function SearchContent() {
 
     setLimit(safeLimit);
 
+    const parsedAddressParam = addressParam ? parseCaip10(addressParam.trim()) : null;
+
+    if (parsedAddressParam?.isKnownChain && !normalizedChain) {
+      setSelectedChain(parsedAddressParam.chainId);
+    }
+
     if (addressParam) {
       setSearchMode('address');
       const trimmedAddress = addressParam.trim();
-      setAddressQuery(trimmedAddress);
-      executeAddressSearch(trimmedAddress, normalizedChain || undefined, safeLimit);
+      const resolvedAddress = parsedAddressParam ? parsedAddressParam.address : trimmedAddress;
+      const resolvedChainId = normalizedChain || (parsedAddressParam?.isKnownChain ? parsedAddressParam.chainId : undefined);
+      setAddressQuery(resolvedAddress);
+      executeAddressSearch(trimmedAddress, resolvedChainId, safeLimit);
       return;
     }
 
@@ -331,7 +345,13 @@ function SearchContent() {
   };
 
   const handleAddressChange = (value: string) => {
-    setAddressQuery(value);
+    const parsedCaip10 = parseCaip10(value);
+    if (parsedCaip10?.isKnownChain) {
+      setSelectedChain(parsedCaip10.chainId);
+      setAddressQuery(parsedCaip10.address);
+    } else {
+      setAddressQuery(value);
+    }
     setError('');
   };
 
@@ -533,7 +553,7 @@ function SearchContent() {
                 <div className="mt-2">
                   <input
                     type="text"
-                    placeholder="Enter address (0x...)"
+                    placeholder="Enter address (CAIP-10 or chain-specific)"
                     value={addressQuery}
                     onChange={(event) => handleAddressChange(event.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"

@@ -80,7 +80,7 @@ const ARBITRUM_BASE_CHAIN_IDS = ['eip155:42161', 'eip155:42170'];
 // Fetch blockspace coverage data from growthepie API
 const fetchBlockspaceCoverage = async (): Promise<BlockspaceCoverageData[]> => {
   try {
-    const response = await fetch('https://api.growthepie.xyz/v1/blockspace/overview.json');
+    const response = await fetch('https://api.growthepie.com/v1/blockspace/overview.json');
     const data = await response.json();
     
     const timeframe = 'max';

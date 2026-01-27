@@ -4,6 +4,7 @@ import { formFields } from '../constants/formFields';
 import { validateProjectField } from './projectValidation';
 import { validateCategoryField, convertCategoryAlias } from './categoryValidation';
 import { validatePaymasterField, convertPaymasterAlias } from './paymasterValidation';
+import { parseCaip10 } from './caipUtils';
 
 const levenshtein = (a: string, b: string): number => {
     const an = a.length;
@@ -32,6 +33,13 @@ const mapHeaderToField = (header: string): string | null => {
     let minDistance = Infinity;
 
     if (!normalizedHeader) return null;
+
+    const headerAliases: { [key: string]: string } = {
+        originkey: 'chain_id'
+    };
+    if (headerAliases[normalizedHeader]) {
+        return headerAliases[normalizedHeader];
+    }
 
     for (const field of formFields) {
         const normalizedFieldId = field.id.toLowerCase().replace(/[\s_-]/g, '');
@@ -100,6 +108,7 @@ const convertChainId = (value: string): string => {
         'op': 'eip155:10',
         'matic': 'eip155:137',
         'polygon': 'eip155:137',
+        'polygon_pos': 'eip155:137',
         'base': 'eip155:8453',
         'arbitrum': 'eip155:42161',
         'arb': 'eip155:42161',
@@ -364,6 +373,28 @@ export const parseAndCleanCsv = async (csvText: string, emptyRow: RowData): Prom
                     warnings[key] = warnings[key] || [];
                     warnings[key].push(...paymasterWarnings);
                 }
+            }
+        }
+
+        const parsedCaip10 = parseCaip10(row.address);
+        if (parsedCaip10) {
+            const previousChainId = row.chain_id;
+            row.address = parsedCaip10.address;
+            if (parsedCaip10.isKnownChain && !row.chain_id) {
+                row.chain_id = parsedCaip10.chainId;
+                const chainWarningKey = `${rowIndex}-chain_id`;
+                warnings[chainWarningKey] = warnings[chainWarningKey] || [];
+                warnings[chainWarningKey].push({
+                    message: `Chain ID set from CAIP-10 address: ${parsedCaip10.chainId}`,
+                    isConversion: true
+                });
+            } else if (parsedCaip10.isKnownChain && previousChainId && previousChainId !== parsedCaip10.chainId) {
+                const addressWarningKey = `${rowIndex}-address`;
+                warnings[addressWarningKey] = warnings[addressWarningKey] || [];
+                warnings[addressWarningKey].push({
+                    message: `CAIP-10 chain (${parsedCaip10.chainId}) does not match chain_id (${previousChainId}).`,
+                    isError: true
+                });
             }
         }
         newRows.push(row);

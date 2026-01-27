@@ -35,6 +35,7 @@ import { NETWORK_CONFIG, getNetworkConfig, type SupportedChainId } from '@/const
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { isEthereumWallet } from '@dynamic-labs/ethereum';
 import { switchToAttestationNetwork } from '@/utils/attestationUtils';
+import { parseCaip10 } from '@/utils/caipUtils';
 
 // Chain mapping function to convert various formats to CAIP-2
 const mapChainToCAIP2 = (chainInput: string): string | undefined => {
@@ -98,8 +99,10 @@ function AttestPageContent() {
     // Get chain parameter (can be 'chain' or 'chainId')
     const chainParam = searchParams.get('chain') || searchParams.get('chainId');
     
+    const parsedCaip10 = addressParam ? parseCaip10(addressParam) : null;
+
     if (addressParam) {
-      setPrefilledAddress(addressParam);
+      setPrefilledAddress(parsedCaip10 ? parsedCaip10.address : addressParam);
     }
     
     if (chainParam) {
@@ -109,6 +112,8 @@ function AttestPageContent() {
       } else {
         console.warn(`Unable to map chain parameter "${chainParam}" to a supported chain`);
       }
+    } else if (parsedCaip10?.isKnownChain) {
+      setPrefilledChainId(parsedCaip10.chainId);
     }
     
     // Handle hash-based routing and auto-scroll

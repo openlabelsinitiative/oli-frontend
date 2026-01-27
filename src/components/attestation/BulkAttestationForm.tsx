@@ -12,8 +12,9 @@ import { Trash2, Plus, Upload, Download, Save, X } from 'lucide-react';
 import { CHAIN_OPTIONS } from '../../constants/chains';
 import { getNetworkConfig, isSupportedAttestationChain } from '../../constants/eas';
 import { VALID_CATEGORY_IDS } from '../../constants/categories';
-import { validateAddress, validateChain, validateCategory, validateBoolean } from '../../utils/validation';
-import { prepareTags, prepareEncodedData, switchToAttestationNetwork, initializeEAS, canUseSponsoredTransaction, createSponsoredBulkAttestation } from '../../utils/attestationUtils';
+import { validateAddress, validateAddressForChain, validateChain, validateCategory, validateBoolean } from '../../utils/validation';
+import { prepareTags, prepareEncodedData, switchToAttestationNetwork, initializeEAS, canUseSponsoredTransaction, createSponsoredBulkAttestation, FRONTEND_ATTESTATION_RECIPIENT } from '../../utils/attestationUtils';
+import { parseCaip10 } from '../../utils/caipUtils';
 import { NotificationType, ConfirmationData, RowData, ColumnDefinition, AttestationResult, FieldValue, ValidationWarning } from '../../types/attestation';
 import { parseAndCleanCsv } from '../../utils/csvUtils';
 import { formFields } from '../../constants/formFields';
@@ -153,6 +154,10 @@ const BulkAttestationForm: React.FC<BulkAttestationFormProps> = ({
     const chains = urlParams.get('chains');
     
     if (address && bulk === 'true') {
+      const parsedCaip10 = parseCaip10(address);
+      const resolvedAddress = parsedCaip10 ? parsedCaip10.address : address;
+      const resolvedChainId = parsedCaip10?.isKnownChain ? parsedCaip10.chainId : undefined;
+
       // If multiple chains are specified, create multiple rows
       if (chains) {
         const chainList = chains.split(',');
@@ -165,7 +170,7 @@ const BulkAttestationForm: React.FC<BulkAttestationFormProps> = ({
           
           const row: RowData = {
             ...EMPTY_ROW,
-            address: address,
+            address: resolvedAddress,
             chain_id: chainId,
           };
           
@@ -185,13 +190,13 @@ const BulkAttestationForm: React.FC<BulkAttestationFormProps> = ({
         });
         
         setRows(newRows);
-        showNotification(`Pre-filled ${chainList.length} rows for address ${address} across multiple chains.`, 'success');
+        showNotification(`Pre-filled ${chainList.length} rows for address ${resolvedAddress} across multiple chains.`, 'success');
       }
       // Single chain/address pre-fill
       else {
         const row: RowData = {
           ...EMPTY_ROW,
-          address: address
+          address: resolvedAddress
         };
         
         if (chain) {
@@ -201,6 +206,8 @@ const BulkAttestationForm: React.FC<BulkAttestationFormProps> = ({
             return matchedChain?.caip2 || 'eip155:1'; // Default to Ethereum mainnet if not found
           })();
           row.chain_id = chainId;
+        } else if (resolvedChainId) {
+          row.chain_id = resolvedChainId;
         }
         
         if (contractName) row.contract_name = contractName;
@@ -225,8 +232,8 @@ const BulkAttestationForm: React.FC<BulkAttestationFormProps> = ({
         ].filter(Boolean).join(', ');
         
         const message = prefilledFields 
-          ? `Address ${address} pre-filled with ${prefilledFields}.`
-          : `Address ${address} pre-filled from search. Add chain information and other details.`;
+          ? `Address ${resolvedAddress} pre-filled with ${prefilledFields}.`
+          : `Address ${resolvedAddress} pre-filled from search. Add chain information and other details.`;
         
         showNotification(message, 'success');
       }
@@ -238,7 +245,7 @@ const BulkAttestationForm: React.FC<BulkAttestationFormProps> = ({
     const fetchProjects = async () => {
       setIsLoadingProjects(true);
       try {
-        const response = await fetch('https://api.growthepie.xyz/v1/labels/projects.json');
+        const response = await fetch('https://api.growthepie.com/v1/labels/projects.json');
         const data = await response.json();
         
         // Extract project IDs from the response
@@ -330,8 +337,13 @@ const BulkAttestationForm: React.FC<BulkAttestationFormProps> = ({
 
   // Update a specific field in a row
   const updateRow = useCallback(async (index: number, field: string, value: string) => {
+    const parsedCaip10 = field === 'address' ? parseCaip10(value) : null;
+    const resolvedValue = parsedCaip10 ? parsedCaip10.address : value;
     const newRows = [...rows];
-    newRows[index] = { ...newRows[index], [field]: value };
+    newRows[index] = { ...newRows[index], [field]: resolvedValue };
+    if (parsedCaip10?.isKnownChain) {
+      newRows[index].chain_id = parsedCaip10.chainId;
+    }
     setRows(newRows);
 
     const newErrors = { ...errors };
@@ -344,10 +356,14 @@ const BulkAttestationForm: React.FC<BulkAttestationFormProps> = ({
 
     const column = activeColumns.find(col => col.id === field);
     if (column) {
-      if (column.required && !value) {
+      if (column.required && !resolvedValue) {
         newErrors[errorKey] = `${column.name} is required`;
-      } else if (column.validator) {
-        const validationError = column.validator(value);
+      } else {
+        const validationError = column.id === 'address'
+          ? validateAddressForChain(resolvedValue, newRows[index].chain_id)
+          : column.validator
+            ? column.validator(resolvedValue)
+            : null;
         if (validationError) {
           newErrors[errorKey] = validationError;
         }
@@ -356,6 +372,9 @@ const BulkAttestationForm: React.FC<BulkAttestationFormProps> = ({
       // Note: owner_project warnings are now handled in validateRows() for the summary
     }
     
+    if (parsedCaip10?.isKnownChain) {
+      delete newErrors[`${index}-chain_id`];
+    }
     setErrors(newErrors);
     setWarnings(newWarnings);
     
@@ -425,12 +444,14 @@ const BulkAttestationForm: React.FC<BulkAttestationFormProps> = ({
         }
 
         // Run field-specific validation
-        if (column.validator) {
-          const validationError = column.validator(value);
-          if (validationError) {
-            newErrors[errorKey] = validationError;
-            isValid = false;
-          }
+        const validationError = column.id === 'address'
+          ? validateAddressForChain(value, row.chain_id)
+          : column.validator
+            ? column.validator(value)
+            : null;
+        if (validationError) {
+          newErrors[errorKey] = validationError;
+          isValid = false;
         }
 
         // Special validation for owner_project
@@ -654,6 +675,7 @@ const BulkAttestationForm: React.FC<BulkAttestationFormProps> = ({
       }
       
       const attestationsData: AttestationData[] = [];
+      const attestationTargets: string[] = [];
       
       // Filter valid rows again to be safe and exclude dummy rows
       const validRows = rows.filter(row => 
@@ -663,15 +685,21 @@ const BulkAttestationForm: React.FC<BulkAttestationFormProps> = ({
       for (const row of validRows) {
         // Create tags_json object
         const tagsObject = prepareTags(row);
-        const encodedData = prepareEncodedData(row.chain_id, tagsObject, targetNetworkId);
+        const encodedData = prepareEncodedData(
+          row.chain_id,
+          row.address,
+          tagsObject,
+          targetNetworkId
+        );
 
         // Add to attestations array
         attestationsData.push({
-          recipient: row.address,
+          recipient: FRONTEND_ATTESTATION_RECIPIENT,
           expirationTime: NO_EXPIRATION, 
           revocable: true,
           data: encodedData,
         });
+        attestationTargets.push(row.address);
       }
 
       // Check if we can use sponsored transactions
@@ -719,7 +747,7 @@ const BulkAttestationForm: React.FC<BulkAttestationFormProps> = ({
       
       // Create results array for user feedback
       const results: AttestationResult[] = attestationUIDs.map((uid: string, index: number) => ({
-        address: attestationsData[index].recipient,
+        address: attestationTargets[index],
         success: true,
         uid: uid
       }));
