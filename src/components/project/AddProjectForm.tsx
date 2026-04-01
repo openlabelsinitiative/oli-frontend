@@ -768,6 +768,7 @@ github:
                         href={`https://github.com/opensource-observer/oss-directory/new/main/data/projects/${formData.name.charAt(0).toLowerCase()}?filename=${formData.name}.yaml&value=${encodeURIComponent(generatedYaml)}&message=${encodeURIComponent(`Add ${formData.display_name} project`)}&description=Adding%20project%20via%20Open%20Labels%20Initiative%20form`}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={() => { fetch('/api/discord/pr-alert', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ projectName: formData.display_name }) }); }}
                         className="w-full flex justify-center items-center px-6 py-3 bg-gradient-to-r from-blue-500 via-purple-600 to-pink-500 text-white rounded-xl hover:from-blue-600 hover:via-purple-700 hover:to-pink-600 transition-all duration-200 text-sm font-semibold shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
                       >
                         <svg 
