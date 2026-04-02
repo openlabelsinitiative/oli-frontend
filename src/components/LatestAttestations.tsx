@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Attestation, fetchLatestAttestations } from '@/services/attestationService';
+import { CHAINS } from '@/constants/chains';
 
 const BASE_FIELDS = new Set([
   'attester',
@@ -32,7 +33,7 @@ const formatTimestamp = (timestamp: number): string => {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
   });
 };
 
@@ -91,53 +92,47 @@ const LatestAttestations: React.FC = () => {
       <div className="space-y-4">
         {attestations.map((attestation, index) => {
           const tagEntries = getTagEntries(attestation);
-          const chainId = attestation.chain_id ? attestation.chain_id.split(':').pop() : null;
+          const chain = attestation.chain_id
+            ? CHAINS.find(c => c.caip2 === attestation.chain_id)
+            : null;
+          const chainLabel = chain?.shortName || (attestation.chain_id ? `Chain ${attestation.chain_id.split(':').pop()}` : null);
 
           return (
             <div
               key={`${attestation.timeCreated}-${index}`}
-              className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200"
-              onClick={() => window.open(`https://base.easscan.org/attestation/view/${attestation.id}`, '_blank')}
-              style={{ cursor: 'pointer' }}
+              className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+              onClick={() => {
+                if (attestation.isOffchain) {
+                  window.open(`https://ipfs.io/ipfs/${attestation.ipfsHash}`, '_blank');
+                } else {
+                  window.open(`https://base.easscan.org/attestation/view/${attestation.id}`, '_blank');
+                }
+              }}
             >
               <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2">
-                    <div className="flex items-center px-3 py-1 bg-gray-100 rounded-md border border-gray-200">
-                      <span className="text-sm font-medium text-gray-500 mr-2">From:</span>
-                      <code className="text-sm font-mono text-gray-500">
-                        {attestation.attester.substring(0, 6)}...
-                        {attestation.attester.substring(attestation.attester.length - 4)}
-                      </code>
-                    </div>
-
-                    <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
-
-                    <div className="flex items-center px-3 py-1 bg-gray-100 rounded-md border border-gray-200">
-                      <span className="text-sm font-medium text-gray-500 mr-2">To:</span>
-                      <code className="text-sm font-mono text-gray-500">
-                        {attestation.recipient.substring(0, 6)}...
-                        {attestation.recipient.substring(attestation.recipient.length - 4)}
-                      </code>
-                    </div>
-
-                    {chainId && (
-                      <span className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-600 rounded-full">
-                        Chain {chainId}
-                      </span>
-                    )}
-
-                    {attestation.isOffchain && (
-                      <span className="px-2 py-0.5 text-xs font-medium bg-purple-50 text-purple-600 rounded-full">
-                        Offchain
-                      </span>
-                    )}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center px-3 py-1 bg-gray-100 rounded-md border border-gray-200">
+                    <span className="text-sm font-medium text-gray-500 mr-2">To:</span>
+                    <code className="text-sm font-mono text-gray-500">
+                      {attestation.recipient.substring(0, 6)}...
+                      {attestation.recipient.substring(attestation.recipient.length - 4)}
+                    </code>
                   </div>
+
+                  {chainLabel && (
+                    <span className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-600 rounded-full border border-blue-100">
+                      {chainLabel}
+                    </span>
+                  )}
+
+                  {attestation.isOffchain && (
+                    <span className="px-2 py-0.5 text-xs font-medium bg-purple-50 text-purple-600 rounded-full border border-purple-100">
+                      Offchain
+                    </span>
+                  )}
                 </div>
 
-                <div className="text-sm text-gray-500">
+                <div className="text-sm text-gray-400">
                   {formatTimestamp(Number(attestation.timeCreated))}
                 </div>
               </div>
@@ -147,10 +142,10 @@ const LatestAttestations: React.FC = () => {
                   {tagEntries.map(([key, value]) => (
                     <div
                       key={key}
-                      className="inline-flex items-center px-3 py-1 rounded-md bg-indigo-50 border border-indigo-100"
+                      className="inline-flex items-center px-2 py-1 rounded-md bg-gray-50 border border-gray-200"
                     >
-                      <span className="text-xs font-medium text-gray-500 mr-2">{key}:</span>
-                      <span className="text-sm text-indigo-700">
+                      <span className="text-xs text-gray-400 mr-1.5">{key}:</span>
+                      <span className="text-xs font-medium text-gray-700">
                         {formatValue(value)}
                       </span>
                     </div>
