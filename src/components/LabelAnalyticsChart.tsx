@@ -63,8 +63,10 @@ interface ProcessedAttestation {
   recipient: string;
   isOffchain: boolean;
   revoked: boolean;
+  ipfsHash: string | null;
   txId: string;
-  decodedData: any;
+  chainId: string | null;
+  tagsData: Record<string, any> | null;
   timeCreated: number;
 }
 
@@ -561,13 +563,7 @@ const LabelAnalyticsContent: React.FC<LabelAnalyticsContentProps> = ({
     if (attesterData.data.latest_25_attestations?.values) {
       attesterData.data.latest_25_attestations.values.forEach(attestationRow => {
         try {
-          const [id, attester, recipient, isOffchain, revoked, , txId, decodedDataJson, , timeCreated] = attestationRow;
-          let decodedData;
-          try {
-            decodedData = JSON.parse(decodedDataJson);
-          } catch {
-            decodedData = { raw: decodedDataJson };
-          }
+          const [id, attester, recipient, isOffchain, revoked, ipfsHash, txId, chainId, tagsData, timeCreated] = attestationRow;
 
           attestationsList.push({
             id,
@@ -575,8 +571,10 @@ const LabelAnalyticsContent: React.FC<LabelAnalyticsContentProps> = ({
             recipient,
             isOffchain,
             revoked,
+            ipfsHash: typeof ipfsHash === 'string' ? ipfsHash : null,
             txId,
-            decodedData,
+            chainId: typeof chainId === 'string' ? chainId : null,
+            tagsData: tagsData && typeof tagsData === 'object' ? tagsData as Record<string, any> : null,
             timeCreated
           });
         } catch (error) {
@@ -994,52 +992,28 @@ const LabelAnalyticsContent: React.FC<LabelAnalyticsContentProps> = ({
               </h3>
               <div className="space-y-4">
                 {attestationsList.map((attestation, index) => {
-                  // Parse the decoded data to extract tags
-                  let tags = null;
-                  let chainId = null;
-                  
-                  try {
-                    if (Array.isArray(attestation.decodedData)) {
-                      // Find chain_id field
-                      const chainIdField = attestation.decodedData.find((field: any) => 
-                        field.name === 'chain_id' && field.value?.value
-                      );
-                      if (chainIdField?.value?.value) {
-                        chainId = chainIdField.value.value.replace('eip155:', '');
-                      }
-                      
-                      // Find tags_json field
-                      const tagsField = attestation.decodedData.find((field: any) => 
-                        field.name === 'tags_json' && field.value?.value
-                      );
-                      if (tagsField?.value?.value) {
-                        tags = JSON.parse(tagsField.value.value);
-                      }
-                    }
-                  } catch (error) {
-                    console.error('Error parsing attestation data:', error);
-                  }
+                  const chainIdDisplay = attestation.chainId
+                    ? attestation.chainId.replace('eip155:', '')
+                    : null;
+                  const chain = chainIdDisplay
+                    ? CHAINS.find(c => c.caip2 === attestation.chainId)
+                    : null;
+                  const chainLabel = chain?.shortName || (chainIdDisplay ? `Chain ${chainIdDisplay}` : null);
 
                   return (
-                    <div 
+                    <div
                       key={index}
                       className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
-                      onClick={() => window.open(`https://base.easscan.org/attestation/view/${attestation.id}`, '_blank')}
+                      onClick={() => {
+                        if (attestation.isOffchain) {
+                          window.open(`https://ipfs.io/ipfs/${attestation.ipfsHash}`, '_blank');
+                        } else {
+                          window.open(`https://base.easscan.org/attestation/view/${attestation.id}`, '_blank');
+                        }
+                      }}
                     >
                       <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center px-3 py-1 bg-gray-100 rounded-md border border-gray-200">
-                            <span className="text-sm font-medium text-gray-500 mr-2">From:</span>
-                            <code className="text-sm font-mono text-gray-500">
-                              {attestation.attester.substring(0, 6)}...
-                              {attestation.attester.substring(attestation.attester.length - 4)}
-                            </code>
-                          </div>
-                          
-                          <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                          </svg>
-
+                        <div className="flex items-center gap-2 flex-wrap">
                           <div className="flex items-center px-3 py-1 bg-gray-100 rounded-md border border-gray-200">
                             <span className="text-sm font-medium text-gray-500 mr-2">To:</span>
                             <code className="text-sm font-mono text-gray-500">
@@ -1047,27 +1021,27 @@ const LabelAnalyticsContent: React.FC<LabelAnalyticsContentProps> = ({
                               {attestation.recipient.substring(attestation.recipient.length - 4)}
                             </code>
                           </div>
-                          
-                          {chainId && (
-                            <span className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-600 rounded-full">
-                              Chain {chainId}
+
+                          {chainLabel && (
+                            <span className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-600 rounded-full border border-blue-100">
+                              {chainLabel}
                             </span>
                           )}
-                          
+
                           {attestation.isOffchain && (
-                            <span className="px-2 py-0.5 text-xs font-medium bg-purple-50 text-purple-600 rounded-full">
+                            <span className="px-2 py-0.5 text-xs font-medium bg-purple-50 text-purple-600 rounded-full border border-purple-100">
                               Offchain
                             </span>
                           )}
-                          
+
                           {attestation.revoked && (
-                            <span className="px-2 py-0.5 text-xs font-medium bg-red-50 text-red-600 rounded-full">
+                            <span className="px-2 py-0.5 text-xs font-medium bg-red-50 text-red-600 rounded-full border border-red-100">
                               Revoked
                             </span>
                           )}
                         </div>
-                        
-                        <div className="text-sm text-gray-500">
+
+                        <div className="text-sm text-gray-400">
                           {new Date(attestation.timeCreated * 1000).toLocaleString('en-US', {
                             year: 'numeric',
                             month: 'short',
@@ -1078,19 +1052,19 @@ const LabelAnalyticsContent: React.FC<LabelAnalyticsContentProps> = ({
                         </div>
                       </div>
 
-                      {tags && (
+                      {attestation.tagsData && (
                         <div className="flex flex-wrap gap-2">
-                          {Object.entries(tags).map(([key, value]) => (
-                            <div 
+                          {Object.entries(attestation.tagsData).map(([key, value]) => (
+                            <div
                               key={key}
-                              className="inline-flex items-center px-3 py-1 rounded-md bg-indigo-50 border border-indigo-100"
+                              className="inline-flex items-center px-2 py-1 rounded-md bg-gray-50 border border-gray-200"
                             >
-                              <span className="text-xs font-medium text-gray-500 mr-2">{key}:</span>
-                              <span className="text-sm text-indigo-700">
-                                {value === null 
-                                  ? 'null'
+                              <span className="text-xs text-gray-400 mr-1.5">{key}:</span>
+                              <span className="text-xs font-medium text-gray-700">
+                                {value === null
+                                  ? '—'
                                   : typeof value === 'boolean'
-                                    ? String(value)
+                                    ? (value ? 'true' : 'false')
                                     : typeof value === 'object'
                                       ? JSON.stringify(value)
                                       : String(value)
