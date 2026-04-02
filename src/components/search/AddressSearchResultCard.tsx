@@ -21,7 +21,10 @@ const formatTimestamp = (timestamp: string) => {
   return date.toLocaleString('en-US', {
     month: 'short',
     day: 'numeric',
-    year: 'numeric'
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
   });
 };
 

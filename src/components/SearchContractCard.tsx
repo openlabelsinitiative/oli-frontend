@@ -308,12 +308,7 @@ const SearchContractCard: React.FC<SearchContractCardProps> = ({
   const mergeLabelTags = (tags: Tag[], labelTags: Tag[]) => {
     const seen = new Set<string>();
 
-    const tagKey = (tag: Tag) => {
-      const parts = tag.name.split(':');
-      const key = parts[0]?.trim() || '';
-      const value = parts.slice(1).join(':').trim();
-      return `${key}:${value.toLowerCase()}`;
-    };
+    const tagKey = (tag: Tag) => (tag.name.split(':')[0]?.trim() || '').toLowerCase();
 
     tags.forEach(tag => {
       seen.add(tagKey(tag));
@@ -553,6 +548,9 @@ const SearchContractCard: React.FC<SearchContractCardProps> = ({
       month: 'short',
       day: 'numeric',
       year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
     });
   };
 
