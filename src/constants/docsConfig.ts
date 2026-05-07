@@ -106,6 +106,14 @@ export const DOC_SECTIONS: DocSection[] = [
         isClickable: false, // No README file exists in GitHub
         children: [
           {
+            id: 'tooling-read-bigquery',
+            title: 'BigQuery Tables',
+            description: 'Public BigQuery tables for historical analytics and backfills',
+            githubUrl: 'https://raw.githubusercontent.com/openlabelsinitiative/OLI/main/2_label_pool/tooling_read/bigquery/README.md',
+            githubPath: '2_label_pool/tooling_read/bigquery/README.md',
+            parent: 'tooling-read'
+          },
+          {
             id: 'tooling-read-parquet',
             title: 'Parquet Tools',
             description: 'Parquet data processing and export tools',
