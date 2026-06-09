@@ -1,7 +1,6 @@
 import React from 'react';
 import CodeBlock from './CodeBlock';
 import UrlDisplay from './UrlDisplay';
-import ParquetExports from './ParquetExports';
 import CodeExamples from './CodeExamples';
 
 const ExampleUsage: React.FC = () => {
@@ -67,12 +66,6 @@ ls -lh labels_raw.parquet`
           url="https://api.growthepie.com/v1/oli/labels_raw.parquet"
           label="Raw Parquet Export"
         />
-      </div>
-
-      {/* Parquet Exports Component */}
-      <div>
-        <h2 className="text-lg font-semibold mb-4">Parquet Exports</h2>
-        <ParquetExports />
       </div>
 
       {/* Code Examples with Tabs */}
