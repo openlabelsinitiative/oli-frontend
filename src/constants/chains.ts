@@ -335,6 +335,28 @@ const BASE_CHAINS: ChainMetadata[] = [
     description: 'Polygon is a popular sidechain/commit-chain that uses Plasma and Proof-of-Stake. It offers fast and cheap transactions for Ethereum DApps.'
   },
   {
+    id: 'robinhood',
+    name: 'Robinhood Chain',
+    shortName: 'Robinhood',
+    caip2: 'eip155:4663',
+    chainId: 4663,
+    isOrbitChain: true,
+    orbitMetadata: {
+      parentChain: 'Ethereum',
+      deployerTeam: 'Robinhood',
+      status: 'Mainnet',
+      layer: 2,
+      category: 'defi'
+    },
+    colors: {
+      light: ['#1C180D', '#1C180D'],
+      dark: ['#FFFFFF', '#FFFFFF'],
+      darkTextOnBackground: false
+    },
+    logo: null,
+    description: 'Robinhood Chain is a permissionless, EVM-compatible Arbitrum Layer 2 built for onchain financial infrastructure and real-world assets.'
+  },
+  {
     id: 'bnb_chain',
     name: 'BNB Smart Chain',
     shortName: 'BNB Chain',
