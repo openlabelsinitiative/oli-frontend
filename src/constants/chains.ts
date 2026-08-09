@@ -337,7 +337,7 @@ const BASE_CHAINS: ChainMetadata[] = [
   {
     id: 'robinhood',
     name: 'Robinhood Chain',
-    shortName: 'Robinhood',
+    shortName: 'Robinhood Chain',
     caip2: 'eip155:4663',
     chainId: 4663,
     isOrbitChain: true,
