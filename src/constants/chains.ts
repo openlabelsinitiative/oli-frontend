@@ -522,6 +522,20 @@ const BASE_CHAINS: ChainMetadata[] = [
     description: 'Soneium is an Ethereum Layer 2 blockchain network that provides scalable and efficient transaction processing with ETH as its native currency.'
   },
   {
+    id: 'robinhood',
+    name: 'Robinhood Chain',
+    shortName: 'Robinhood',
+    caip2: 'eip155:4663',
+    chainId: 4663,
+    colors: {
+      light: ['#00C805', '#00C805'],
+      dark: ['#00E05A', '#00E05A'],
+      darkTextOnBackground: true
+    },
+    logo: null,
+    description: 'Robinhood Chain is an Ethereum Layer 2 network designed for financial applications and tokenized real-world assets.'
+  },
+  {
     id: 'megaeth_testnet_v2',
     name: '🐰 MegaETH Testnet v2',
     shortName: 'Timothy',
